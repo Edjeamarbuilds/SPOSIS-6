@@ -1,0 +1,19 @@
+{
+  "name": "Salon POS & Inventory",
+  "short_name": "Salon POS",
+  "description": "Salon sales, services, and inventory management.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#fbf6f3",
+  "theme_color": "#493747",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
