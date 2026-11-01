@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#493747">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <title>Salon POS & Inventory</title>
+  <style>
+    :root {
+      --ink: #302738;
+      --muted: #827786;
+      --accent: #a45d78;
+      --accent-dark: #85445f;
+      --surface: #ffffff;
+      --page: #fbf6f3;
+      --line: #eee4e2;
+      --success: #21865a;
+      --danger: #b74450;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: radial-gradient(circle at top right, #f3e5e7 0, transparent 34%), var(--page); color: var(--ink); font: 15px/1.5 Arial, sans-serif; }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    .layout { min-height: 100vh; display: grid; grid-template-columns: 245px 1fr; }
+    aside { background: linear-gradient(165deg, #493747, #2d2836 72%); color: #fff; padding: 28px 18px; box-shadow: 8px 0 28px rgba(48, 39, 56, .08); }
+    .brand { font-size: 20px; font-weight: 700; margin: 2px 10px 35px; }
+    .brand span { color: #d6b7fa; }
+    .nav-label { color: #aaa0b6; font-size: 11px; font-weight: bold; letter-spacing: 1.3px; margin: 22px 10px 9px; text-transform: uppercase; }
+    .nav-button { border: 0; border-radius: 9px; background: transparent; color: #e9e3ed; display: block; margin: 5px 0; padding: 12px; text-align: left; width: 100%; }
+    .nav-button { transition: background .18s ease, transform .18s ease; }
+    .nav-button:hover, .nav-button.active { background: rgba(255, 255, 255, .13); color: #fff; }
+    .nav-button:hover { transform: translateX(3px); }
+    main { min-width: 0; padding: 32px clamp(18px, 4vw, 52px); }
+    .topbar { align-items: center; display: flex; justify-content: space-between; margin-bottom: 28px; }
+    h1 { font-size: 27px; margin: 0; }
+    h2 { font-size: 18px; margin: 0 0 16px; }
+    .muted { color: var(--muted); }
+    .panel { background: rgba(255, 255, 255, .94); border: 1px solid var(--line); border-radius: 16px; padding: 22px; box-shadow: 0 8px 24px rgba(74, 51, 65, .045); }
+    .stats { display: grid; gap: 16px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 20px; }
+    .stats .panel { border-top: 3px solid #d7a7b5; }
+    .stat-label { color: var(--muted); font-size: 13px; }
+    .stat-value { font-size: 25px; font-weight: 700; margin-top: 8px; }
+    .content-grid { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr) 340px; align-items: start; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+    .button { border: 0; border-radius: 9px; padding: 10px 15px; transition: background .18s ease, transform .18s ease, box-shadow .18s ease; }
+    .button:hover { transform: translateY(-1px); }
+    .primary { background: var(--accent); color: white; box-shadow: 0 4px 10px rgba(164, 93, 120, .2); }
+    .primary:hover { background: var(--accent-dark); box-shadow: 0 6px 14px rgba(133, 68, 95, .22); }
+    .secondary { background: #f5e9ed; color: #78445a; }
+    .danger { background: #fff0f0; color: var(--danger); }
+    .field { display: grid; gap: 6px; margin-bottom: 14px; }
+    label { color: #595466; font-size: 13px; font-weight: 600; }
+    input, select { background: #fff; border: 1px solid #ded8e5; border-radius: 7px; color: var(--ink); padding: 10px; width: 100%; }
+    input:focus, select:focus { border-color: var(--accent); outline: 2px solid #eadcf8; }
+    .form-row { display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
+    .table-wrap { overflow-x: auto; }
+    table { border-collapse: collapse; min-width: 470px; width: 100%; }
+    th, td { border-bottom: 1px solid var(--line); padding: 12px 9px; text-align: left; }
+    th { color: var(--muted); font-size: 12px; font-weight: 600; }
+    td:last-child, th:last-child { text-align: right; }
+    .badge { background: #f0e9f8; border-radius: 20px; color: #623b8c; display: inline-block; font-size: 12px; padding: 3px 9px; }
+    .cart-empty { color: var(--muted); padding: 10px 0; }
+    .cart-line { align-items: center; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; gap: 12px; padding: 11px 0; }
+    .cart-line small { color: var(--muted); display: block; }
+    .remove { background: none; border: 0; color: var(--danger); font-size: 18px; padding: 4px; }
+    .total-row { display: flex; font-size: 17px; font-weight: 700; justify-content: space-between; padding: 17px 0; }
+    .wide { width: 100%; }
+    .notice { color: var(--muted); font-size: 13px; margin-top: 13px; }
+    .empty { color: var(--muted); padding: 20px 8px; text-align: center; }
+    .page { display: none; }
+    .page.active { display: block; }
+    .report-total { color: var(--success); }
+    .topbar-actions { align-items: center; display: flex; gap: 10px; }
+    .admin-only { display: none; }
+    .admin-only.visible { display: block; }
+    .login-backdrop { align-items: center; background: rgba(35, 28, 39, .58); display: none; inset: 0; justify-content: center; padding: 18px; position: fixed; z-index: 10; }
+    .login-backdrop.open { display: flex; }
+    .login-card { max-width: 410px; width: 100%; }
+    .login-card h2 { margin-bottom: 8px; }
+    .login-actions { display: flex; gap: 10px; }
+    .login-actions button { flex: 1; }
+    .login-error { color: var(--danger); min-height: 21px; }
+    @media (max-width: 680px) { .topbar-actions { align-items: flex-start; flex-direction: column; } }
+
+    /* Extra visual polish for the salon dashboard. */
+    aside { position: relative; overflow: hidden; }
+    aside::after { content: ""; position: absolute; width: 210px; height: 210px; right: -100px; bottom: 6%; border: 1px solid rgba(255,255,255,.08); border-radius: 50%; box-shadow: 0 0 0 24px rgba(255,255,255,.025), 0 0 0 48px rgba(255,255,255,.02); pointer-events: none; }
+    main { animation: page-enter .35s ease both; }
+    @keyframes page-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    h1 { letter-spacing: -.7px; }
+    .panel h2 { letter-spacing: -.25px; }
+    .stats .panel { background: linear-gradient(145deg, #fff 65%, #fcf5f7); }
+    th { background: #fcf8f8; }
+    .cart-empty { border: 1px dashed #e5d7dc; border-radius: 10px; padding: 18px; text-align: center; }
+    #complete-sale { min-height: 46px; font-weight: 700; }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
+    }
+
+    /* Extra polish for the dashboard and interactive controls. */
+    .panel { transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease; }
+    .panel:hover { border-color: #e5d2d9; box-shadow: 0 12px 30px rgba(74, 51, 65, .08); }
+    .topbar .badge { background: #f3e8ed; color: var(--accent-dark); padding: 7px 12px; }
+    .stat-value { color: #453849; letter-spacing: -.5px; }
+    .stats .panel:nth-child(2) { border-top-color: #c6b5df; }
+    .stats .panel:nth-child(3) { border-top-color: #e5c5a6; }
+    .nav-button:focus-visible, .button:focus-visible, .remove:focus-visible {
+      outline: 3px solid #d9b4c3;
+      outline-offset: 2px;
+    }
+    .button:disabled { cursor: not-allowed; opacity: .55; transform: none; }
+    tbody tr { transition: background .15s ease; }
+    tbody tr:hover { background: #fcf7f8; }
+    .cart-line { border-radius: 8px; }
+    .cart-line:hover { background: #fdf9fa; }
+    .remove { border-radius: 6px; line-height: 1; transition: background .15s ease; }
+    .remove:hover { background: #fff0f0; }
+    input, select { transition: border-color .18s ease, box-shadow .18s ease; }
+    input:focus, select:focus { box-shadow: 0 0 0 3px rgba(164, 93, 120, .12); outline: none; }
+    .notice { line-height: 1.6; }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      aside { padding: 14px; }
+      .brand { margin: 4px 8px 12px; }
+      .nav-label { display: none; }
+      nav { display: flex; gap: 5px; overflow-x: auto; }
+      .nav-button { flex: 0 0 auto; margin: 0; padding: 9px 11px; width: auto; }
+      main { padding-top: 22px; }
+    }
+    @media (max-width: 680px) {
+      .content-grid, .stats { grid-template-columns: 1fr; }
+      .topbar { align-items: flex-start; gap: 10px; flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <div class="brand">CB SPOSIS</div>
+      <div class="nav-label">Workspace</div>
+      <nav aria-label="Main navigation">
+        <button class="nav-button active" data-page="sales">New sale</button>
+        <button class="nav-button" data-page="inventory">Inventory</button>
+        <button class="nav-button" data-page="services">Services</button>
+        <button class="nav-button" data-page="reports">Sales report</button>
+      </nav>
+    </aside>
+    <main>
+      <header class="topbar">
+        <div>
+          <h1 id="page-title">New sale</h1>
+          <div class="muted">Salon point of sale and inventory</div>
+        </div>
+        <div class="topbar-actions">
+          <div class="badge" id="today"></div>
+          <button class="button secondary" id="admin-button" type="button">Admin login</button>
+        </div>
+      </header>
+
+      <div class="login-backdrop" id="admin-dialog" role="dialog" aria-modal="true" aria-labelledby="admin-dialog-title">
+        <form class="panel login-card" id="admin-form">
+          <h2 id="admin-dialog-title">Admin login</h2>
+          <p class="muted" id="admin-description"></p>
+          <div class="field"><label for="admin-username">Username</label><input id="admin-username" type="text" placeholder="Enter admin username" autocomplete="username" required></div>
+          <div class="field"><label for="admin-password">Password</label><input id="admin-password" type="password" placeholder="Enter admin password" autocomplete="current-password" required></div>
+          <p class="login-error" id="admin-error" aria-live="polite"></p>
+          <div class="login-actions">
+            <button class="button primary" id="admin-submit" type="submit">Log in</button>
+            <button class="button secondary" id="admin-cancel" type="button">Cancel</button>
+          </div>
+        </form>
+      </div>
+
+      <section class="page active" id="page-sales">
+        <div class="stats">
+          <div class="panel"><div class="stat-label">Today's sales</div><div class="stat-value" id="today-sales">₱0.00</div></div>
+          <div class="panel"><div class="stat-label">Sales recorded</div><div class="stat-value" id="sales-count">0</div></div>
+          <div class="panel"><div class="stat-label">Products in catalog</div><div class="stat-value" id="product-count">0</div></div>
+        </div>
+        <div class="content-grid">
+          <section class="panel">
+            <h2>Add items to sale</h2>
+            <div class="form-row">
+              <div class="field"><label for="item-type">Item type</label><select id="item-type"><option value="service">Service</option><option value="product">Product</option></select></div>
+              <div class="field"><label for="item-select">Item</label><select id="item-select"></select></div>
+            </div>
+            <div class="form-row">
+              <div class="field" id="quantity-field"><label for="item-quantity">Quantity</label><input id="item-quantity" type="number" min="1" value="1"></div>
+              <div class="field" style="align-self:end"><button class="button primary wide" id="add-to-cart">Add to sale</button></div>
+            </div>
+            <div class="notice">Product stock is checked before checkout and reduced only when the sale is completed.</div>
+          </section>
+          <section class="panel">
+            <h2>Current sale</h2>
+            <div id="cart-items" class="cart-empty">No items added yet.</div>
+            <div class="total-row"><span>Total</span><span id="cart-total">₱0.00</span></div>
+            <button class="button primary wide" id="complete-sale">Complete sale</button>
+            <button class="button secondary wide" id="clear-cart" style="margin-top:8px">Clear sale</button>
+          </section>
+        </div>
+      </section>
+
+      <section class="page" id="page-inventory">
+        <div class="content-grid">
+          <section class="panel">
+            <h2>Product inventory</h2>
+            <div class="table-wrap"><table><thead><tr><th>Product</th><th>Price</th><th>In stock</th><th>ID</th></tr></thead><tbody id="inventory-rows"></tbody></table></div>
+          </section>
+          <section class="panel admin-only" id="inventory-admin-tools">
+            <h2>Add product</h2>
+            <div class="field"><label for="new-product-name">Product name</label><input id="new-product-name" type="text" placeholder="Enter product name"></div>
+            <div class="form-row">
+              <div class="field"><label for="new-product-price">Price (₱)</label><input id="new-product-price" type="number" min="0" step="0.01" placeholder="0.00"></div>
+              <div class="field"><label for="new-product-stock">Starting stock</label><input id="new-product-stock" type="number" min="0" step="1" placeholder="0"></div>
+            </div>
+            <button class="button primary wide" id="add-product">Add product</button>
+            <h2 style="margin-top:24px">Add stock</h2>
+            <div class="field"><label for="stock-product">Product</label><select id="stock-product"></select></div>
+            <div class="field"><label for="stock-quantity">Quantity to add</label><input id="stock-quantity" type="number" min="1" value="1"></div>
+            <button class="button secondary wide" id="add-stock">Update stock</button>
+          </section>
+        </div>
+      </section>
+
+      <section class="page" id="page-services">
+        <div class="content-grid">
+          <section class="panel">
+            <h2>Available services</h2>
+            <div class="table-wrap"><table><thead><tr><th>Service</th><th>Price</th><th>ID</th></tr></thead><tbody id="service-rows"></tbody></table></div>
+          </section>
+          <section class="panel admin-only" id="services-admin-tools">
+            <h2>Add service</h2>
+            <div class="field"><label for="new-service-name">Service name</label><input id="new-service-name" type="text" placeholder="Enter service name"></div>
+            <div class="field"><label for="new-service-price">Price (₱)</label><input id="new-service-price" type="number" min="0" step="0.01" placeholder="0.00"></div>
+            <button class="button primary wide" id="add-service">Add service</button>
+          </section>
+        </div>
+      </section>
+
+      <section class="page" id="page-reports">
+        <div class="stats">
+          <div class="panel"><div class="stat-label">Total revenue</div><div class="stat-value report-total" id="total-revenue">₱0.00</div></div>
+          <div class="panel"><div class="stat-label">Completed sales</div><div class="stat-value" id="report-count">0</div></div>
+          <div class="panel"><div class="stat-label">Average sale</div><div class="stat-value" id="average-sale">₱0.00</div></div>
+        </div>
+        <section class="panel">
+          <h2>Recent sales</h2>
+          <div class="table-wrap"><table><thead><tr><th>Sale</th><th>Date</th><th>Items</th><th>Total</th></tr></thead><tbody id="sales-rows"></tbody></table></div>
+        </section>
+      </section>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var STORAGE_KEY = "salon-pos-system-v1";
+      var ADMIN_KEY = "salon-pos-admin-v1";
+      var defaults = { products: [], services: [], sales: [] };
+      var data;
+      var cart = [];
+      var adminLoggedIn = false;
+
+      function loadData() {
+        try {
+          var saved = localStorage.getItem(STORAGE_KEY);
+          if (saved) {
+            var parsed = JSON.parse(saved);
+            parsed.products = parsed.products || defaults.products;
+            parsed.services = parsed.services || defaults.services;
+            parsed.sales = parsed.sales || [];
+            return parsed;
+          }
+        } catch (error) {
+          // Use the starter data if browser storage is unavailable or invalid.
+        }
+        return JSON.parse(JSON.stringify(defaults));
+      }
+      function saveData() {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+        catch (error) { alert("Could not save data in this browser."); }
+      }
+      function money(value) { return "₱" + Number(value || 0).toFixed(2); }
+      function escapeHtml(value) {
+        return String(value).replace(/[&<>"']/g, function (char) {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[char];
+        });
+      }
+      function el(id) { return document.getElementById(id); }
+      function getAdminAccount() {
+        try { return JSON.parse(localStorage.getItem(ADMIN_KEY) || "null"); }
+        catch (error) { return null; }
+      }
+      function hashPassword(password) {
+        var bytes = new TextEncoder().encode(password);
+        return window.crypto.subtle.digest("SHA-256", bytes).then(function (buffer) {
+          return Array.prototype.map.call(new Uint8Array(buffer), function (byte) {
+            return ("0" + byte.toString(16)).slice(-2);
+          }).join("");
+        });
+      }
+      function updateAdminControls() {
+        document.querySelectorAll(".admin-only").forEach(function (panel) {
+          panel.classList.toggle("visible", adminLoggedIn);
+        });
+        el("admin-button").textContent = adminLoggedIn ? "Admin logout" : "Admin login";
+      }
+      function openAdminDialog() {
+        var hasAccount = !!getAdminAccount();
+        el("admin-dialog-title").textContent = hasAccount ? "Admin login" : "Create admin account";
+        el("admin-description").textContent = hasAccount
+          ? "Sign in to manage products, services, and stock."
+          : "Set up the admin username and password for this browser. Use at least 8 characters for the password.";
+        el("admin-submit").textContent = hasAccount ? "Log in" : "Create account";
+        el("admin-password").setAttribute("autocomplete", hasAccount ? "current-password" : "new-password");
+        el("admin-error").textContent = "";
+        el("admin-form").reset();
+        el("admin-dialog").classList.add("open");
+        el("admin-username").focus();
+      }
+      function fillSelect(select, items, placeholder) {
+        select.innerHTML = "";
+        if (!items.length) {
+          var empty = document.createElement("option");
+          empty.value = ""; empty.textContent = placeholder;
+          select.appendChild(empty);
+          return;
+        }
+        items.forEach(function (item) {
+          var option = document.createElement("option");
+          option.value = item.id;
+          option.textContent = item.name + " — " + money(item.price) + (item.stock === undefined ? "" : " (" + item.stock + " in stock)");
+          select.appendChild(option);
+        });
+      }
+      function render() {
+        var type = el("item-type").value;
+        fillSelect(el("item-select"), type === "product" ? data.products : data.services, "No items available");
+        fillSelect(el("stock-product"), data.products, "No products available");
+
+        el("inventory-rows").innerHTML = data.products.length ? data.products.map(function (item) {
+          return "<tr><td>" + escapeHtml(item.name) + "</td><td>" + money(item.price) + "</td><td>" + item.stock + "</td><td>" + item.id + "</td></tr>";
+        }).join("") : '<tr><td colspan="4" class="empty">No products available.</td></tr>';
+        el("service-rows").innerHTML = data.services.length ? data.services.map(function (item) {
+          return "<tr><td>" + escapeHtml(item.name) + "</td><td>" + money(item.price) + "</td><td>" + item.id + "</td></tr>";
+        }).join("") : '<tr><td colspan="3" class="empty">No services available.</td></tr>';
+
+        var total = cart.reduce(function (sum, item) { return sum + item.price * item.quantity; }, 0);
+        el("cart-total").textContent = money(total);
+        el("cart-items").innerHTML = cart.length ? cart.map(function (item, index) {
+          return '<div class="cart-line"><div>' + escapeHtml(item.name) + '<small>' + item.quantity + ' × ' + money(item.price) + '</small></div><strong>' + money(item.price * item.quantity) + '</strong><button class="remove" data-remove="' + index + '" aria-label="Remove item">×</button></div>';
+        }).join("") : "No items added yet.";
+
+        var now = new Date();
+        var today = now.toLocaleDateString();
+        var todaysSales = data.sales.filter(function (sale) { return new Date(sale.date).toLocaleDateString() === today; });
+        var revenueToday = todaysSales.reduce(function (sum, sale) { return sum + sale.total; }, 0);
+        var revenue = data.sales.reduce(function (sum, sale) { return sum + sale.total; }, 0);
+        el("today").textContent = now.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+        el("today-sales").textContent = money(revenueToday);
+        el("sales-count").textContent = data.sales.length;
+        el("product-count").textContent = data.products.length;
+        el("total-revenue").textContent = money(revenue);
+        el("report-count").textContent = data.sales.length;
+        el("average-sale").textContent = money(data.sales.length ? revenue / data.sales.length : 0);
+        el("sales-rows").innerHTML = data.sales.length ? data.sales.slice().reverse().map(function (sale) {
+          var names = sale.items.map(function (item) { return escapeHtml(item.name); }).join(", ");
+          return "<tr><td>#" + sale.id + "</td><td>" + escapeHtml(new Date(sale.date).toLocaleString()) + "</td><td>" + names + "</td><td>" + money(sale.total) + "</td></tr>";
+        }).join("") : '<tr><td colspan="4" class="empty">No sales recorded yet.</td></tr>';
+      }
+
+      document.querySelectorAll(".nav-button").forEach(function (button) {
+        button.addEventListener("click", function () {
+          document.querySelectorAll(".nav-button").forEach(function (item) { item.classList.remove("active"); });
+          document.querySelectorAll(".page").forEach(function (page) { page.classList.remove("active"); });
+          button.classList.add("active");
+          el("page-" + button.getAttribute("data-page")).classList.add("active");
+          el("page-title").textContent = button.textContent;
+        });
+      });
+      el("admin-button").addEventListener("click", function () {
+        if (adminLoggedIn) {
+          adminLoggedIn = false;
+          updateAdminControls();
+          return;
+        }
+        openAdminDialog();
+      });
+      el("admin-cancel").addEventListener("click", function () {
+        el("admin-dialog").classList.remove("open");
+      });
+      el("admin-dialog").addEventListener("click", function (event) {
+        if (event.target === el("admin-dialog")) { el("admin-dialog").classList.remove("open"); }
+      });
+      el("admin-form").addEventListener("submit", function (event) {
+        event.preventDefault();
+        var username = el("admin-username").value.trim();
+        var password = el("admin-password").value;
+        var account = getAdminAccount();
+        var error = el("admin-error");
+        if (!username || !password) { error.textContent = "Enter both username and password."; return; }
+        if (!account && password.length < 8) { error.textContent = "Use a password with at least 8 characters."; return; }
+        if (!window.crypto || !window.crypto.subtle || !window.TextEncoder) {
+          error.textContent = "Admin login requires a secure browser connection.";
+          return;
+        }
+        hashPassword(password).then(function (passwordHash) {
+          if (account) {
+            if (account.username !== username || account.passwordHash !== passwordHash) {
+              error.textContent = "Incorrect username or password.";
+              return;
+            }
+          } else {
+            account = { username: username, passwordHash: passwordHash };
+            localStorage.setItem(ADMIN_KEY, JSON.stringify(account));
+          }
+          adminLoggedIn = true;
+          updateAdminControls();
+          el("admin-dialog").classList.remove("open");
+          el("admin-form").reset();
+        }).catch(function () {
+          error.textContent = "Could not access browser storage. Check browser settings and try again.";
+        });
+      });
+      el("item-type").addEventListener("change", render);
+      el("add-to-cart").addEventListener("click", function () {
+        var type = el("item-type").value;
+        var collection = type === "product" ? data.products : data.services;
+        var item = collection.filter(function (entry) { return String(entry.id) === el("item-select").value; })[0];
+        var quantity = parseInt(el("item-quantity").value, 10);
+        if (!item) { alert("Choose an available item first."); return; }
+        if (!quantity || quantity < 1) { alert("Quantity must be at least 1."); return; }
+        if (type === "product") {
+          var inCart = cart.reduce(function (sum, line) { return sum + (line.type === "product" && line.id === item.id ? line.quantity : 0); }, 0);
+          if (quantity + inCart > item.stock) { alert("Not enough stock. Available: " + Math.max(0, item.stock - inCart) + "."); return; }
+        } else { quantity = 1; }
+        cart.push({ type: type, id: item.id, name: item.name, price: Number(item.price), quantity: quantity });
+        el("item-quantity").value = 1;
+        render();
+      });
+      el("cart-items").addEventListener("click", function (event) {
+        var index = event.target.getAttribute("data-remove");
+        if (index !== null) { cart.splice(Number(index), 1); render(); }
+      });
+      el("clear-cart").addEventListener("click", function () { cart = []; render(); });
+      el("complete-sale").addEventListener("click", function () {
+        if (!cart.length) { alert("Add at least one item to the sale."); return; }
+        var total = cart.reduce(function (sum, item) { return sum + item.price * item.quantity; }, 0);
+        cart.filter(function (item) { return item.type === "product"; }).forEach(function (line) {
+          var product = data.products.filter(function (entry) { return entry.id === line.id; })[0];
+          if (!product || product.stock < line.quantity) { product = null; }
+          if (!product) { return; }
+          product.stock -= line.quantity;
+        });
+        var stockProblem = cart.some(function (line) {
+          if (line.type !== "product") { return false; }
+          var product = data.products.filter(function (entry) { return entry.id === line.id; })[0];
+          return !product || product.stock < 0;
+        });
+        if (stockProblem) { alert("Stock changed; please check the inventory and try again."); render(); return; }
+        var sale = {
+          id: data.sales.reduce(function (maximum, entry) { return Math.max(maximum, Number(entry.id) || 0); }, 0) + 1,
+          date: new Date().toISOString(),
+          items: cart.map(function (item) { return { name: item.name, quantity: item.quantity, unit_price: item.price }; }),
+          total: Math.round(total * 100) / 100
+        };
+        data.sales.push(sale);
+        saveData();
+        cart = [];
+        render();
+        alert("Sale #" + sale.id + " completed — " + money(sale.total));
+      });
+      el("add-product").addEventListener("click", function () {
+        if (!adminLoggedIn) { alert("Admin login required."); return; }
+        var name = el("new-product-name").value.trim();
+        var price = Number(el("new-product-price").value);
+        var stock = Number(el("new-product-stock").value);
+        if (!name || el("new-product-price").value === "" || !isFinite(price) || price < 0) {
+          alert("Enter a product name and a valid price."); return;
+        }
+        if (el("new-product-stock").value === "" || !isFinite(stock) || stock < 0 || Math.floor(stock) !== stock) {
+          alert("Enter a valid whole-number starting stock."); return;
+        }
+        var id = data.products.reduce(function (max, item) { return Math.max(max, Number(item.id) || 0); }, 0) + 1;
+        data.products.push({ id: id, name: name, price: Math.round(price * 100) / 100, stock: stock });
+        saveData();
+        el("new-product-name").value = "";
+        el("new-product-price").value = "";
+        el("new-product-stock").value = "";
+        render();
+      });
+      el("add-service").addEventListener("click", function () {
+        if (!adminLoggedIn) { alert("Admin login required."); return; }
+        var name = el("new-service-name").value.trim();
+        var price = Number(el("new-service-price").value);
+        if (!name || el("new-service-price").value === "" || !isFinite(price) || price < 0) {
+          alert("Enter a service name and a valid price."); return;
+        }
+        var id = data.services.reduce(function (max, item) { return Math.max(max, Number(item.id) || 0); }, 0) + 1;
+        data.services.push({ id: id, name: name, price: Math.round(price * 100) / 100 });
+        saveData();
+        el("new-service-name").value = "";
+        el("new-service-price").value = "";
+        render();
+      });
+      el("add-stock").addEventListener("click", function () {
+        if (!adminLoggedIn) { alert("Admin login required."); return; }
+        var item = data.products.filter(function (entry) { return String(entry.id) === el("stock-product").value; })[0];
+        var quantity = parseInt(el("stock-quantity").value, 10);
+        if (!item) { alert("Choose a product first."); return; }
+        if (!quantity || quantity < 1) { alert("Enter a quantity of at least 1."); return; }
+        item.stock += quantity;
+        saveData();
+        render();
+        alert("Updated " + item.name + " stock: " + item.stock + " units.");
+      });
+
+      data = loadData();
+      updateAdminControls();
+      render();
+    }());
+
+    if ("serviceWorker" in navigator && location.protocol !== "file:") {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("service-worker.js").catch(function () {
+          // The app remains usable even if offline support is unavailable.
+        });
+      });
+    }
+  </script>
+</body>
+</html>
