@@ -480,6 +480,52 @@ class SalonApp(tk.Tk):
                          activebackground=bg, activeforeground=fg, relief="flat",
                          padx=13, pady=8, font=("Arial", 9, "bold"), cursor="hand2")
 
+    def confirm_action(self, title, message, confirm_text="Confirm", danger=False, parent=None):
+        owner = parent or self
+        dialog = tk.Toplevel(owner)
+        dialog.title(title)
+        dialog.transient(owner)
+        dialog.resizable(False, False)
+        dialog.configure(bg=self.colors["bg"])
+        result = {"confirmed": False}
+
+        card = tk.Frame(dialog, bg="white", padx=26, pady=22,
+                        highlightbackground="#e9e1e8", highlightthickness=1)
+        card.pack(fill="both", expand=True, padx=10, pady=10)
+        accent = "#b74450" if danger else self.colors["accent"]
+        icon = tk.Canvas(card, width=46, height=46, bg="white", highlightthickness=0)
+        icon.pack(anchor="w", pady=(0, 12))
+        icon.create_oval(2, 2, 44, 44, fill="#fff0f0" if danger else "#f5e9ed", outline="")
+        icon.create_text(23, 23, text="!" if danger else "✓", fill=accent,
+                         font=("Arial", 21, "bold"))
+        tk.Label(card, text=title, bg="white", fg=self.colors["ink"],
+                 font=("Arial", 16, "bold")).pack(anchor="w")
+        tk.Label(card, text=message, bg="white", fg=self.colors["muted"],
+                 font=("Arial", 10), justify="left", wraplength=340).pack(anchor="w", pady=(7, 20))
+
+        actions = tk.Frame(card, bg="white")
+        actions.pack(fill="x")
+        def close(confirmed=False):
+            result["confirmed"] = confirmed
+            dialog.destroy()
+        tk.Button(actions, text="Cancel", command=lambda: close(), bg="#f1e8ed",
+                  fg="#70465a", activebackground="#e8dce3", relief="flat",
+                  padx=14, pady=9, font=("Arial", 9, "bold"), cursor="hand2").pack(side="right", padx=(8, 0))
+        tk.Button(actions, text=confirm_text, command=lambda: close(True), bg=accent,
+                  fg="white", activebackground="#85445f" if not danger else "#963944",
+                  activeforeground="white", relief="flat", padx=14, pady=9,
+                  font=("Arial", 9, "bold"), cursor="hand2").pack(side="right")
+
+        dialog.bind("<Escape>", lambda event: close())
+        dialog.protocol("WM_DELETE_WINDOW", close)
+        dialog.update_idletasks()
+        x = owner.winfo_rootx() + max(0, (owner.winfo_width() - dialog.winfo_width()) // 2)
+        y = owner.winfo_rooty() + max(0, (owner.winfo_height() - dialog.winfo_height()) // 2)
+        dialog.geometry("+{}+{}".format(x, y))
+        dialog.grab_set()
+        owner.wait_window(dialog)
+        return result["confirmed"]
+
     def page_dashboard(self):
         if not self.require_admin():
             return
@@ -564,7 +610,8 @@ class SalonApp(tk.Tk):
             if values:
                 self.db.connection.execute("UPDATE products SET name=?,price=?,stock=?,low_stock_level=?,description=? WHERE id=?", vals + (int(values[0]),))
             else:
-                if not messagebox.askyesno("Confirm product", "Add '{}' to the product catalog?".format(name), parent=dialog):
+                if not self.confirm_action("Add product", "Add '{}' to the product catalog?".format(name),
+                                           "Add product", parent=dialog):
                     return
                 self.db.connection.execute("INSERT INTO products(name,price,stock,low_stock_level,description) VALUES(?,?,?,?,?)", vals)
             self.db.connection.commit(); dialog.destroy(); done()
@@ -573,7 +620,9 @@ class SalonApp(tk.Tk):
     def delete_product(self, view, refresh):
         selected = view.focus()
         if not selected: messagebox.showinfo("Select product", "Choose a product first."); return
-        if messagebox.askyesno("Delete product", "Delete this product? Past sale records will be retained."):
+        product_name = view.item(selected, "values")[1]
+        if self.confirm_action("Delete product", "Delete '{}'? Past sale records will be retained.".format(product_name),
+                               "Delete product", danger=True):
             self.db.connection.execute("DELETE FROM products WHERE id=?", (int(selected),)); self.db.connection.commit(); refresh()
 
     def page_services(self):
@@ -612,7 +661,8 @@ class SalonApp(tk.Tk):
             args = (name, entries["description"].get().strip(), price)
             if values: self.db.connection.execute("UPDATE services SET name=?,description=?,price=? WHERE id=?", args + (int(values[0]),))
             else:
-                if not messagebox.askyesno("Confirm service", "Add '{}' to the services list?".format(name), parent=dialog):
+                if not self.confirm_action("Add service", "Add '{}' to the services list?".format(name),
+                                           "Add service", parent=dialog):
                     return
                 self.db.connection.execute("INSERT INTO services(name,description,price) VALUES(?,?,?)", args)
             self.db.connection.commit(); dialog.destroy(); done()
@@ -621,7 +671,9 @@ class SalonApp(tk.Tk):
     def delete_service(self, view, refresh):
         selected = view.focus()
         if not selected: messagebox.showinfo("Select service", "Choose a service first."); return
-        if messagebox.askyesno("Delete service", "Remove this service? Past sale records will be retained."):
+        service_name = view.item(selected, "values")[1]
+        if self.confirm_action("Delete service", "Remove '{}'? Past sale records will be retained.".format(service_name),
+                               "Delete service", danger=True):
             self.db.connection.execute("DELETE FROM services WHERE id=?", (int(selected),)); self.db.connection.commit(); refresh()
 
     def page_users(self):
