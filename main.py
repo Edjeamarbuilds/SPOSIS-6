@@ -564,6 +564,8 @@ class SalonApp(tk.Tk):
             if values:
                 self.db.connection.execute("UPDATE products SET name=?,price=?,stock=?,low_stock_level=?,description=? WHERE id=?", vals + (int(values[0]),))
             else:
+                if not messagebox.askyesno("Confirm product", "Add '{}' to the product catalog?".format(name), parent=dialog):
+                    return
                 self.db.connection.execute("INSERT INTO products(name,price,stock,low_stock_level,description) VALUES(?,?,?,?,?)", vals)
             self.db.connection.commit(); dialog.destroy(); done()
         self.button(box, "Save product", save).pack(anchor="e", pady=(15, 0))
@@ -609,7 +611,10 @@ class SalonApp(tk.Tk):
                 messagebox.showerror("Invalid service", "Enter a service name and non-negative price.", parent=dialog); return
             args = (name, entries["description"].get().strip(), price)
             if values: self.db.connection.execute("UPDATE services SET name=?,description=?,price=? WHERE id=?", args + (int(values[0]),))
-            else: self.db.connection.execute("INSERT INTO services(name,description,price) VALUES(?,?,?)", args)
+            else:
+                if not messagebox.askyesno("Confirm service", "Add '{}' to the services list?".format(name), parent=dialog):
+                    return
+                self.db.connection.execute("INSERT INTO services(name,description,price) VALUES(?,?,?)", args)
             self.db.connection.commit(); dialog.destroy(); done()
         self.button(box, "Save service", save).pack(anchor="e", pady=(15, 0))
 
