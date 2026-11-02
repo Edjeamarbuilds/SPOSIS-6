@@ -176,8 +176,10 @@
       #page-inventory th, #page-inventory td,
       #page-services th, #page-services td,
       #page-reports th, #page-reports td { padding: 8px 4px; overflow-wrap: anywhere; }
-      #page-inventory th:last-child, #page-inventory td:last-child,
-      #page-services th:last-child, #page-services td:last-child { display: none; }
+      #page-inventory th:nth-child(4), #page-inventory td:nth-child(4),
+      #page-services th:nth-child(3), #page-services td:nth-child(3) { display: none; }
+      #page-inventory td:last-child, #page-services td:last-child { white-space: nowrap; text-align: left; }
+      #page-inventory td .button, #page-services td .button { font-size: 11px; padding: 6px 7px; }
       #page-reports th:first-child, #page-reports td:first-child { display: none; }
       #page-reports table { table-layout: fixed; }
       #page-reports th:nth-child(2), #page-reports td:nth-child(2) { width: 31%; }
@@ -290,7 +292,7 @@
         <div class="content-grid">
           <section class="panel">
             <h2>Product inventory</h2>
-            <div class="table-wrap"><table><thead><tr><th>Product</th><th>Price</th><th>In stock</th><th>ID</th></tr></thead><tbody id="inventory-rows"></tbody></table></div>
+            <div class="table-wrap"><table><thead><tr><th>Product</th><th>Price</th><th>In stock</th><th>ID</th><th>Actions</th></tr></thead><tbody id="inventory-rows"></tbody></table></div>
           </section>
           <section class="panel admin-only" id="inventory-admin-tools">
             <h2>Add product</h2>
@@ -312,7 +314,7 @@
         <div class="content-grid">
           <section class="panel">
             <h2>Available services</h2>
-            <div class="table-wrap"><table><thead><tr><th>Service</th><th>Price</th><th>ID</th></tr></thead><tbody id="service-rows"></tbody></table></div>
+            <div class="table-wrap"><table><thead><tr><th>Service</th><th>Price</th><th>ID</th><th>Actions</th></tr></thead><tbody id="service-rows"></tbody></table></div>
           </section>
           <section class="panel admin-only" id="services-admin-tools">
             <h2>Add service</h2>
@@ -446,11 +448,11 @@
         fillSelect(el("stock-product"), data.products, "No products available");
 
         el("inventory-rows").innerHTML = data.products.length ? data.products.map(function (item) {
-          return "<tr><td>" + escapeHtml(item.name) + "</td><td>" + money(item.price) + "</td><td>" + item.stock + "</td><td>" + item.id + "</td></tr>";
-        }).join("") : '<tr><td colspan="4" class="empty">No products available.</td></tr>';
+          return '<tr><td>' + escapeHtml(item.name) + '</td><td>' + money(item.price) + '</td><td>' + item.stock + '</td><td>' + item.id + '</td><td>' + (adminLoggedIn ? '<button class="button secondary" data-item-action="edit-product" data-item-id="' + item.id + '" type="button">Edit</button> <button class="button danger" data-item-action="delete-product" data-item-id="' + item.id + '" type="button">Delete</button>' : 'Admin login required') + '</td></tr>';
+        }).join("") : '<tr><td colspan="5" class="empty">No products available.</td></tr>';
         el("service-rows").innerHTML = data.services.length ? data.services.map(function (item) {
-          return "<tr><td>" + escapeHtml(item.name) + "</td><td>" + money(item.price) + "</td><td>" + item.id + "</td></tr>";
-        }).join("") : '<tr><td colspan="3" class="empty">No services available.</td></tr>';
+          return '<tr><td>' + escapeHtml(item.name) + '</td><td>' + money(item.price) + '</td><td>' + item.id + '</td><td>' + (adminLoggedIn ? '<button class="button secondary" data-item-action="edit-service" data-item-id="' + item.id + '" type="button">Edit</button> <button class="button danger" data-item-action="delete-service" data-item-id="' + item.id + '" type="button">Delete</button>' : 'Admin login required') + '</td></tr>';
+        }).join("") : '<tr><td colspan="4" class="empty">No services available.</td></tr>';
 
         var total = cart.reduce(function (sum, item) { return sum + item.price * item.quantity; }, 0);
         el("cart-total").textContent = money(total);
@@ -508,6 +510,7 @@
         if (adminLoggedIn) {
           adminLoggedIn = false;
           updateAdminControls();
+          render();
           return;
         }
         openAdminDialog();
@@ -542,6 +545,7 @@
           }
           adminLoggedIn = true;
           updateAdminControls();
+          render();
           el("admin-dialog").classList.remove("open");
           el("admin-form").reset();
         }).catch(function () {
@@ -596,6 +600,58 @@
         render();
         alert("Sale #" + sale.id + " completed — " + money(sale.total));
       });
+      function handleCatalogAction(event, type) {
+        var button = event.target.closest("[data-item-action]");
+        if (!button) { return; }
+        if (!adminLoggedIn) { alert("Admin login required."); return; }
+        var action = button.getAttribute("data-item-action");
+        var id = Number(button.getAttribute("data-item-id"));
+        var collection = type === "product" ? data.products : data.services;
+        var item = collection.filter(function (entry) { return Number(entry.id) === id; })[0];
+        if (!item) { render(); return; }
+
+        if (action === "delete-product" || action === "delete-service") {
+          if (!window.confirm('Delete "' + item.name + '"? Past sales will be retained.')) { return; }
+          collection.splice(collection.indexOf(item), 1);
+          cart = cart.filter(function (line) { return !(line.type === type && Number(line.id) === id); });
+        } else {
+          var name = window.prompt("Item name:", item.name);
+          if (name === null) { return; }
+          name = name.trim();
+          if (!name) { alert("Enter an item name."); return; }
+          var priceText = window.prompt("Price (₱):", item.price);
+          if (priceText === null) { return; }
+          var price = Number(priceText);
+          if (priceText.trim() === "" || !isFinite(price) || price < 0) { alert("Enter a valid non-negative price."); return; }
+          var stock = item.stock;
+          if (type === "product") {
+            var stockText = window.prompt("Quantity in stock:", item.stock);
+            if (stockText === null) { return; }
+            stock = Number(stockText);
+            if (stockText.trim() === "" || !isFinite(stock) || stock < 0 || Math.floor(stock) !== stock) {
+              alert("Enter a valid non-negative whole-number stock quantity."); return;
+            }
+          }
+          item.name = name;
+          item.price = Math.round(price * 100) / 100;
+          if (type === "product") { item.stock = stock; }
+          cart.forEach(function (line) {
+            if (line.type === type && Number(line.id) === id) {
+              line.name = item.name;
+              line.price = Number(item.price);
+            }
+          });
+        }
+        saveData();
+        render();
+      }
+      el("inventory-rows").addEventListener("click", function (event) {
+        handleCatalogAction(event, "product");
+      });
+      el("service-rows").addEventListener("click", function (event) {
+        handleCatalogAction(event, "service");
+      });
+
       el("add-product").addEventListener("click", function () {
         if (!adminLoggedIn) { alert("Admin login required."); return; }
         var name = el("new-product-name").value.trim();
