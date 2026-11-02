@@ -84,6 +84,16 @@
     .login-actions { display: flex; gap: 10px; }
     .login-actions button { flex: 1; }
     .login-error { color: var(--danger); min-height: 21px; }
+    .icon-button { align-items: center; display: inline-flex; justify-content: center; min-height: 40px; min-width: 40px; padding: 8px; }
+    .icon-button svg { height: 20px; width: 20px; }
+    .report-toolbar { align-items: center; display: flex; justify-content: flex-end; margin: -8px 0 16px; }
+    .search-backdrop { align-items: flex-start; background: rgba(35, 28, 39, .58); display: none; inset: 0; justify-content: center; overflow-y: auto; padding: 10vh 18px 18px; position: fixed; z-index: 11; }
+    .search-backdrop.open { display: flex; }
+    .search-card { max-width: 520px; width: 100%; }
+    .search-results { max-height: 55vh; overflow-y: auto; }
+    .search-result { align-items: center; border-bottom: 1px solid var(--line); color: var(--ink); display: flex; justify-content: space-between; gap: 12px; padding: 12px 4px; text-align: left; width: 100%; }
+    .search-result:last-child { border-bottom: 0; }
+    .search-result small { color: var(--muted); display: block; }
     @media (max-width: 680px) { .topbar-actions { align-items: flex-start; flex-direction: column; } }
 
     /* Extra visual polish for the salon dashboard. */
@@ -218,7 +228,9 @@
         </div>
         <div class="topbar-actions">
           <div class="badge" id="today"></div>
-          <button class="button secondary" id="admin-button" type="button">Admin login</button>
+          <button class="button secondary icon-button" id="search-button" type="button" aria-label="Search products and services" title="Search products and services">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 5 5"></path></svg>
+          </button>
         </div>
       </header>
 
@@ -234,6 +246,15 @@
             <button class="button secondary" id="admin-cancel" type="button">Cancel</button>
           </div>
         </form>
+      </div>
+
+      <div class="search-backdrop" id="search-dialog" role="dialog" aria-modal="true" aria-labelledby="search-dialog-title">
+        <section class="panel search-card">
+          <h2 id="search-dialog-title">Search products and services</h2>
+          <div class="field"><label for="global-search">Search by name</label><input id="global-search" type="search" placeholder="Type a product or service name" autocomplete="off"></div>
+          <div class="search-results" id="search-results" aria-live="polite"></div>
+          <button class="button secondary wide" id="search-close" type="button">Close</button>
+        </section>
       </div>
 
       <section class="page active" id="page-sales">
@@ -303,6 +324,7 @@
       </section>
 
       <section class="page" id="page-reports">
+        <div class="report-toolbar"><button class="button secondary" id="admin-button" type="button">Admin login</button></div>
         <div class="stats">
           <div class="panel"><div class="stat-label">Total revenue</div><div class="stat-value report-total" id="total-revenue">₱0.00</div></div>
           <div class="panel"><div class="stat-label">Completed sales</div><div class="stat-value" id="report-count">0</div></div>
@@ -367,6 +389,28 @@
           panel.classList.toggle("visible", adminLoggedIn);
         });
         el("admin-button").textContent = adminLoggedIn ? "Admin logout" : "Admin login";
+      }
+      function renderSearchResults() {
+        var query = el("global-search").value.trim().toLowerCase();
+        var results = el("search-results");
+        if (!query) {
+          results.innerHTML = '<p class="muted">Enter a name to search the product and service lists.</p>';
+          return;
+        }
+        var matches = [];
+        data.products.forEach(function (item) {
+          if (String(item.name).toLowerCase().indexOf(query) !== -1) {
+            matches.push({ item: item, type: "Product", page: "inventory", detail: item.stock + " in stock" });
+          }
+        });
+        data.services.forEach(function (item) {
+          if (String(item.name).toLowerCase().indexOf(query) !== -1) {
+            matches.push({ item: item, type: "Service", page: "services", detail: "Available service" });
+          }
+        });
+        results.innerHTML = matches.length ? matches.map(function (match) {
+          return '<button class="search-result" type="button" data-page="' + match.page + '"><span>' + escapeHtml(match.item.name) + '<small>' + match.type + ' · ' + match.detail + '</small></span><strong>' + money(match.item.price) + '</strong></button>';
+        }).join("") : '<p class="muted">No matching products or services found.</p>';
       }
       function openAdminDialog() {
         var hasAccount = !!getAdminAccount();
@@ -440,6 +484,25 @@
           el("page-" + button.getAttribute("data-page")).classList.add("active");
           el("page-title").textContent = button.textContent;
         });
+      });
+      el("search-button").addEventListener("click", function () {
+        el("search-dialog").classList.add("open");
+        renderSearchResults();
+        el("global-search").focus();
+      });
+      el("global-search").addEventListener("input", renderSearchResults);
+      el("search-close").addEventListener("click", function () {
+        el("search-dialog").classList.remove("open");
+      });
+      el("search-dialog").addEventListener("click", function (event) {
+        if (event.target === el("search-dialog")) { el("search-dialog").classList.remove("open"); }
+      });
+      el("search-results").addEventListener("click", function (event) {
+        var result = event.target.closest("[data-page]");
+        if (!result) { return; }
+        var navButton = document.querySelector('.nav-button[data-page="' + result.getAttribute("data-page") + '"]');
+        if (navButton) { navButton.click(); }
+        el("search-dialog").classList.remove("open");
       });
       el("admin-button").addEventListener("click", function () {
         if (adminLoggedIn) {
