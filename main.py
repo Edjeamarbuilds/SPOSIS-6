@@ -5,9 +5,14 @@ import os
 import secrets
 import shutil
 import sqlite3
-import tkinter as tk
 from datetime import date, datetime, timedelta
-from tkinter import filedialog, messagebox, simpledialog, ttk
+
+try:
+    import tkinter as tk
+    from tkinter import filedialog, messagebox, simpledialog, ttk
+except ImportError:
+    tk = None
+    filedialog = messagebox = simpledialog = ttk = None
 
 DB_FILE = "salon_pos.db"
 LEGACY_FILE = "salon_data.json"
