@@ -156,6 +156,21 @@
       th, td { padding: 9px 7px; }
       .login-card { padding: 18px; }
     }
+    @media (max-width: 680px) {
+      #page-inventory .panel,
+      #page-services .panel,
+      #page-reports > .panel { padding: 12px; }
+      #page-inventory table,
+      #page-services table,
+      #page-reports table { min-width: 0; table-layout: fixed; font-size: 12px; }
+      #page-inventory th, #page-inventory td,
+      #page-services th, #page-services td,
+      #page-reports th, #page-reports td { padding: 8px 4px; overflow-wrap: anywhere; }
+      #page-inventory th:last-child, #page-inventory td:last-child,
+      #page-services th:last-child, #page-services td:last-child { display: none; }
+      #page-reports th:first-child, #page-reports td:first-child { display: none; }
+      #page-inventory h2, #page-services h2, #page-reports h2 { font-size: 15px; }
+    }
     @media (max-width: 380px) {
       main { padding-right: 9px; padding-left: 9px; }
       .topbar h1 { font-size: 19px; }
@@ -166,6 +181,10 @@
       .stat-value { font-size: 14px; }
       .form-row { grid-template-columns: 1fr; }
       .login-actions { flex-direction: column; }
+      #page-inventory table, #page-services table, #page-reports table { font-size: 11px; }
+      #page-inventory th, #page-inventory td,
+      #page-services th, #page-services td,
+      #page-reports th, #page-reports td { padding: 7px 3px; }
     }
     @media (max-width: 900px) and (orientation: landscape) {
       .content-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
