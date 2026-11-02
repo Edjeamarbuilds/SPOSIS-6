@@ -163,6 +163,18 @@ class SalonApp(tk.Tk):
         self.geometry("1180x760")
         self.minsize(900, 600)
         self.configure(bg="#f6f3f6")
+        if not messagebox.askyesno(
+                "Device check",
+                "Are you using a PC or laptop?\n\n"
+                "This desktop app is not supported on mobile phones.",
+                parent=self):
+            messagebox.showinfo(
+                "Mobile device",
+                "This version requires a PC or laptop. Please use the web app "
+                "on a mobile phone instead.",
+                parent=self)
+            self.destroy()
+            return
         self.db = SalonDatabase()
         self.user = None
         self.cart = []
