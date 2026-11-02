@@ -238,7 +238,7 @@
         </div>
         <div class="topbar-actions">
           <div class="badge" id="today"></div>
-          <button class="button secondary" id="admin-button" type="button">Admin login</button>
+          <button class="button secondary" id="admin-button" type="button">Staff / Admin login</button>
           <label class="header-search" aria-label="Search products and services">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 5 5"></path></svg>
             <input id="header-search" type="search" placeholder="Search products & services" autocomplete="off" aria-label="Search products and services">
@@ -248,10 +248,10 @@
 
       <div class="login-backdrop" id="admin-dialog" role="dialog" aria-modal="true" aria-labelledby="admin-dialog-title">
         <form class="panel login-card" id="admin-form">
-          <h2 id="admin-dialog-title">Admin login</h2>
+          <h2 id="admin-dialog-title">Staff / Admin login</h2>
           <p class="muted" id="admin-description"></p>
-          <div class="field"><label for="admin-username">Username</label><input id="admin-username" type="text" placeholder="Enter admin username" autocomplete="username" required></div>
-          <div class="field"><label for="admin-password">Password</label><input id="admin-password" type="password" placeholder="Enter admin password" autocomplete="current-password" required></div>
+          <div class="field"><label for="admin-username">Username</label><input id="admin-username" type="text" placeholder="Enter your username" autocomplete="username" required></div>
+          <div class="field"><label for="admin-password">Password</label><input id="admin-password" type="password" placeholder="Enter your password" autocomplete="current-password" required></div>
           <p class="login-error" id="admin-error" aria-live="polite"></p>
           <div class="login-actions">
             <button class="button primary" id="admin-submit" type="submit">Log in</button>
@@ -316,6 +316,12 @@
             <div class="field"><label for="stock-product">Product</label><select id="stock-product"></select></div>
             <div class="field"><label for="stock-quantity">Quantity to add</label><input id="stock-quantity" type="number" min="1" value="1"></div>
             <button class="button secondary wide" id="add-stock">Update stock</button>
+            <h2 style="margin-top:24px">Create staff / employee login</h2>
+            <div class="field"><label for="new-staff-name">Employee name</label><input id="new-staff-name" type="text" placeholder="Enter employee name"></div>
+            <div class="field"><label for="new-staff-username">Username</label><input id="new-staff-username" type="text" placeholder="Create a username" autocomplete="off"></div>
+            <div class="field"><label for="new-staff-password">Password (at least 8 characters)</label><input id="new-staff-password" type="password" placeholder="Create a password" autocomplete="new-password"></div>
+            <button class="button secondary wide" id="add-staff">Create staff account</button>
+            <div class="notice" id="staff-list"></div>
           </section>
         </div>
       </section>
@@ -352,10 +358,12 @@
     (function () {
       var STORAGE_KEY = "salon-pos-system-v1";
       var ADMIN_KEY = "salon-pos-admin-v1";
+      var STAFF_KEY = "salon-pos-staff-v1";
       var defaults = { products: [], services: [], sales: [] };
       var data;
       var cart = [];
       var adminLoggedIn = false;
+      var signedInStaff = null;
 
       function loadData() {
         try {
@@ -387,6 +395,10 @@
         try { return JSON.parse(localStorage.getItem(ADMIN_KEY) || "null"); }
         catch (error) { return null; }
       }
+      function getStaffAccounts() {
+        try { return JSON.parse(localStorage.getItem(STAFF_KEY) || "[]"); }
+        catch (error) { return []; }
+      }
       function hashPassword(password) {
         var bytes = new TextEncoder().encode(password);
         return window.crypto.subtle.digest("SHA-256", bytes).then(function (buffer) {
@@ -399,7 +411,14 @@
         document.querySelectorAll(".admin-only").forEach(function (panel) {
           panel.classList.toggle("visible", adminLoggedIn);
         });
-        el("admin-button").textContent = adminLoggedIn ? "Admin logout" : "Admin login";
+        if (el("staff-list")) {
+          var staff = getStaffAccounts();
+          el("staff-list").textContent = staff.length
+            ? "Staff accounts: " + staff.map(function (account) { return account.name + " (" + account.username + ")"; }).join(", ")
+            : "No staff accounts created yet.";
+        }
+        el("admin-button").textContent = adminLoggedIn ? "Admin logout"
+          : signedInStaff ? "Log out · " + signedInStaff.name : "Staff / Admin login";
       }
       function renderSearchResults() {
         var query = el("global-search").value.trim().toLowerCase();
@@ -425,11 +444,11 @@
       }
       function openAdminDialog() {
         var hasAccount = !!getAdminAccount();
-        el("admin-dialog-title").textContent = hasAccount ? "Admin login" : "Create admin account";
+        el("admin-dialog-title").textContent = hasAccount ? "Staff / Admin login" : "Create admin account";
         el("admin-description").textContent = hasAccount
-          ? "Sign in to manage products, services, and stock."
-          : "Set up the admin username and password for this browser. Use at least 8 characters for the password.";
-        el("admin-submit").textContent = hasAccount ? "Log in" : "Create account";
+          ? "Sign in with your staff or administrator account. Staff can process sales; admins can also manage the catalog."
+          : "Set up the first administrator account for this browser. Use at least 8 characters for the password.";
+        el("admin-submit").textContent = hasAccount ? "Log in" : "Create admin account";
         el("admin-password").setAttribute("autocomplete", hasAccount ? "current-password" : "new-password");
         el("admin-error").textContent = "";
         el("admin-form").reset();
@@ -526,8 +545,9 @@
         el("search-dialog").classList.remove("open");
       });
       el("admin-button").addEventListener("click", function () {
-        if (adminLoggedIn) {
+        if (adminLoggedIn || signedInStaff) {
           adminLoggedIn = false;
+          signedInStaff = null;
           updateAdminControls();
           render();
           return;
@@ -549,20 +569,29 @@
         if (!username || !password) { error.textContent = "Enter both username and password."; return; }
         if (!account && password.length < 8) { error.textContent = "Use a password with at least 8 characters."; return; }
         if (!window.crypto || !window.crypto.subtle || !window.TextEncoder) {
-          error.textContent = "Admin login requires a secure browser connection.";
+          error.textContent = "Login requires a secure browser connection.";
           return;
         }
         hashPassword(password).then(function (passwordHash) {
-          if (account) {
-            if (account.username !== username || account.passwordHash !== passwordHash) {
+          if (!account) {
+            account = { username: username, passwordHash: passwordHash };
+            localStorage.setItem(ADMIN_KEY, JSON.stringify(account));
+            adminLoggedIn = true;
+            signedInStaff = null;
+          } else if (account.username === username && account.passwordHash === passwordHash) {
+            adminLoggedIn = true;
+            signedInStaff = null;
+          } else {
+            var staff = getStaffAccounts().filter(function (entry) {
+              return entry.username.toLowerCase() === username.toLowerCase();
+            })[0];
+            if (!staff || staff.passwordHash !== passwordHash) {
               error.textContent = "Incorrect username or password.";
               return;
             }
-          } else {
-            account = { username: username, passwordHash: passwordHash };
-            localStorage.setItem(ADMIN_KEY, JSON.stringify(account));
+            adminLoggedIn = false;
+            signedInStaff = staff;
           }
-          adminLoggedIn = true;
           updateAdminControls();
           render();
           el("admin-dialog").classList.remove("open");
@@ -715,6 +744,36 @@
         render();
         alert("Updated " + item.name + " stock: " + item.stock + " units.");
       });
+      el("add-staff").addEventListener("click", function () {
+        if (!adminLoggedIn) { alert("Admin login required."); return; }
+        var name = el("new-staff-name").value.trim();
+        var username = el("new-staff-username").value.trim();
+        var password = el("new-staff-password").value;
+        var admin = getAdminAccount();
+        var staff = getStaffAccounts();
+        if (!name || !username || password.length < 8) {
+          alert("Enter an employee name, username, and password of at least 8 characters."); return;
+        }
+        if (admin.username.toLowerCase() === username.toLowerCase() || staff.some(function (entry) {
+          return entry.username.toLowerCase() === username.toLowerCase();
+        })) {
+          alert("That username is already in use."); return;
+        }
+        if (!window.crypto || !window.crypto.subtle || !window.TextEncoder) {
+          alert("Account creation requires a secure browser connection."); return;
+        }
+        hashPassword(password).then(function (passwordHash) {
+          staff.push({ name: name, username: username, passwordHash: passwordHash });
+          localStorage.setItem(STAFF_KEY, JSON.stringify(staff));
+          el("new-staff-name").value = "";
+          el("new-staff-username").value = "";
+          el("new-staff-password").value = "";
+          updateAdminControls();
+          alert("Staff account created. The employee can now log in with their username and password.");
+        }).catch(function () {
+          alert("Could not create the account. Check browser storage and try again.");
+        });
+      });
 
       data = loadData();
       updateAdminControls();
@@ -723,7 +782,7 @@
 
     if ("serviceWorker" in navigator && location.protocol !== "file:") {
       window.addEventListener("load", function () {
-        navigator.serviceWorker.register("service-worker.js").catch(function () {
+        navigator.serviceWorker.register("script.js").catch(function () {
           // The app remains usable even if offline support is unavailable.
         });
       });
