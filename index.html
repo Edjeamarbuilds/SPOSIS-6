@@ -457,10 +457,10 @@
         fillSelect(el("stock-product"), data.products, "No products available");
 
         el("inventory-rows").innerHTML = data.products.length ? data.products.map(function (item) {
-          return '<tr><td>' + escapeHtml(item.name) + '</td><td>' + money(item.price) + '</td><td>' + item.stock + '</td><td>' + item.id + '</td><td>' + (adminLoggedIn ? '<button class="button secondary" data-item-action="edit-product" data-item-id="' + item.id + '" type="button">Edit</button> <button class="button danger" data-item-action="delete-product" data-item-id="' + item.id + '" type="button">Delete</button>' : 'Admin login required') + '</td></tr>';
+          return '<tr><td>' + escapeHtml(item.name) + '</td><td>' + money(item.price) + '</td><td>' + item.stock + '</td><td>' + item.id + '</td><td><button class="button secondary" data-item-action="edit-product" data-item-id="' + item.id + '" type="button">Edit</button> <button class="button danger" data-item-action="delete-product" data-item-id="' + item.id + '" type="button">Delete</button></td></tr>';
         }).join("") : '<tr><td colspan="5" class="empty">No products available.</td></tr>';
         el("service-rows").innerHTML = data.services.length ? data.services.map(function (item) {
-          return '<tr><td>' + escapeHtml(item.name) + '</td><td>' + money(item.price) + '</td><td>' + item.id + '</td><td>' + (adminLoggedIn ? '<button class="button secondary" data-item-action="edit-service" data-item-id="' + item.id + '" type="button">Edit</button> <button class="button danger" data-item-action="delete-service" data-item-id="' + item.id + '" type="button">Delete</button>' : 'Admin login required') + '</td></tr>';
+          return '<tr><td>' + escapeHtml(item.name) + '</td><td>' + money(item.price) + '</td><td>' + item.id + '</td><td><button class="button secondary" data-item-action="edit-service" data-item-id="' + item.id + '" type="button">Edit</button> <button class="button danger" data-item-action="delete-service" data-item-id="' + item.id + '" type="button">Delete</button></td></tr>';
         }).join("") : '<tr><td colspan="4" class="empty">No services available.</td></tr>';
 
         var total = cart.reduce(function (sum, item) { return sum + item.price * item.quantity; }, 0);
@@ -630,7 +630,7 @@
         if (!item) { render(); return; }
 
         if (action === "delete-product" || action === "delete-service") {
-          if (!window.confirm('Delete "' + item.name + '"? Past sales will be retained.')) { return; }
+          if (!window.confirm('Do you want to delete this? If yes, proceed; if no, cancel the delete.\n\n' + item.name)) { return; }
           collection.splice(collection.indexOf(item), 1);
           cart = cart.filter(function (line) { return !(line.type === type && Number(line.id) === id); });
         } else {
