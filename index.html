@@ -133,13 +133,14 @@
     input:focus, select:focus { box-shadow: 0 0 0 3px rgba(164, 93, 120, .12); outline: none; }
     .notice { line-height: 1.6; }
     @media (max-width: 900px) {
-      .layout { grid-template-columns: 1fr; }
-      aside { padding: 14px; }
+      .layout { align-items: stretch; display: flex; flex-direction: column; min-height: 100vh; width: 100%; }
+      aside { flex: 0 0 auto; padding: 14px; width: 100%; }
+      aside::after { display: none; }
       .brand { margin: 4px 8px 12px; }
       .nav-label { display: none; }
-      nav { display: flex; gap: 5px; overflow-x: auto; }
+      nav { display: flex; gap: 5px; overflow-x: auto; width: 100%; }
       .nav-button { flex: 0 0 auto; margin: 0; padding: 9px 11px; width: auto; }
-      main { padding-top: 22px; }
+      main { flex: 1 0 auto; padding-top: 22px; width: 100%; }
     }
     @media (max-width: 680px) {
       body { font-size: 14px; }
