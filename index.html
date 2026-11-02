@@ -132,8 +132,46 @@
       main { padding-top: 22px; }
     }
     @media (max-width: 680px) {
-      .content-grid, .stats { grid-template-columns: 1fr; }
-      .topbar { align-items: flex-start; gap: 10px; flex-direction: column; }
+      body { font-size: 14px; }
+      aside { padding: 10px 12px; }
+      .brand { font-size: 18px; margin: 2px 6px 8px; }
+      nav { gap: 4px; }
+      .nav-button { font-size: 13px; padding: 8px 10px; }
+      main { padding: 16px 12px 22px; }
+      .topbar { align-items: flex-start; gap: 8px; flex-direction: row; margin-bottom: 16px; }
+      .topbar h1 { font-size: 21px; }
+      .topbar-actions { align-items: flex-end; flex-direction: column; gap: 6px; }
+      .topbar .badge { font-size: 11px; padding: 5px 8px; }
+      .button { font-size: 13px; padding: 9px 11px; }
+      .panel { border-radius: 12px; padding: 15px; }
+      .panel h2 { font-size: 16px; margin-bottom: 12px; }
+      .stats { gap: 8px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 12px; }
+      .stats .panel { padding: 10px 8px; }
+      .stat-label { font-size: 11px; line-height: 1.25; }
+      .stat-value { font-size: clamp(14px, 4.5vw, 20px); margin-top: 5px; overflow-wrap: anywhere; }
+      .content-grid { gap: 12px; grid-template-columns: 1fr; }
+      .form-row { gap: 8px; }
+      .field { margin-bottom: 10px; }
+      input, select { font-size: 14px; padding: 9px; }
+      th, td { padding: 9px 7px; }
+      .login-card { padding: 18px; }
+    }
+    @media (max-width: 380px) {
+      main { padding-right: 9px; padding-left: 9px; }
+      .topbar h1 { font-size: 19px; }
+      .topbar .badge { max-width: 145px; text-align: center; }
+      .stats { gap: 6px; }
+      .stats .panel { padding: 9px 6px; }
+      .stat-label { font-size: 10px; }
+      .stat-value { font-size: 14px; }
+      .form-row { grid-template-columns: 1fr; }
+      .login-actions { flex-direction: column; }
+    }
+    @media (max-width: 900px) and (orientation: landscape) {
+      .content-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      main { padding-top: 14px; }
+      .topbar { margin-bottom: 14px; }
     }
   </style>
 </head>
