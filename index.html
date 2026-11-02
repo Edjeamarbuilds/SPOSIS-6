@@ -75,6 +75,11 @@
     .page.active { display: block; }
     .report-total { color: var(--success); }
     .topbar-actions { align-items: center; display: flex; gap: 10px; }
+    .header-search { align-items: center; background: #fff; border: 1px solid #ded8e5; border-radius: 9px; display: flex; gap: 8px; min-height: 40px; padding: 0 11px; width: 230px; }
+    .header-search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(164, 93, 120, .12); }
+    .header-search svg { color: var(--accent-dark); flex: 0 0 auto; height: 19px; width: 19px; }
+    .header-search input { background: transparent; border: 0; box-shadow: none; flex: 1; min-width: 0; outline: 0; padding: 8px 0; width: 0; }
+    .header-search input:focus { box-shadow: none; outline: 0; }
     .admin-only { display: none; }
     .admin-only.visible { display: block; }
     .login-backdrop { align-items: center; background: rgba(35, 28, 39, .58); display: none; inset: 0; justify-content: center; padding: 18px; position: fixed; z-index: 10; }
@@ -150,9 +155,10 @@
       nav { gap: 4px; }
       .nav-button { font-size: 13px; padding: 8px 10px; }
       main { padding: 16px 12px 22px; }
-      .topbar { align-items: flex-start; gap: 8px; flex-direction: row; margin-bottom: 16px; }
+      .topbar { align-items: flex-start; gap: 8px; flex-direction: column; margin-bottom: 16px; }
       .topbar h1 { font-size: 21px; }
-      .topbar-actions { align-items: flex-end; flex-direction: column; gap: 6px; }
+      .topbar-actions { align-items: center; flex-direction: row; flex-wrap: wrap; gap: 6px; width: 100%; }
+      .header-search { flex: 1 1 100%; order: 3; width: 100%; }
       .topbar .badge { font-size: 11px; padding: 5px 8px; }
       .button { font-size: 13px; padding: 9px 11px; }
       .panel { border-radius: 12px; padding: 15px; }
@@ -233,10 +239,10 @@
         <div class="topbar-actions">
           <div class="badge" id="today"></div>
           <button class="button secondary" id="admin-button" type="button">Admin login</button>
-          <button class="button secondary icon-button" id="search-button" type="button" aria-label="Search products and services" title="Search products and services">
+          <label class="header-search" aria-label="Search products and services">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 5 5"></path></svg>
-            <span class="search-label">Search</span>
-          </button>
+            <input id="header-search" type="search" placeholder="Search products & services" autocomplete="off" aria-label="Search products and services">
+          </label>
         </div>
       </header>
 
@@ -490,12 +496,22 @@
           el("page-title").textContent = button.textContent;
         });
       });
-      el("search-button").addEventListener("click", function () {
+      function showSearchDialog(query) {
         el("search-dialog").classList.add("open");
+        el("global-search").value = query || "";
         renderSearchResults();
+      }
+      el("header-search").addEventListener("focus", function () {
+        showSearchDialog(el("header-search").value);
         el("global-search").focus();
       });
-      el("global-search").addEventListener("input", renderSearchResults);
+      el("header-search").addEventListener("input", function () {
+        showSearchDialog(el("header-search").value);
+      });
+      el("global-search").addEventListener("input", function () {
+        el("header-search").value = el("global-search").value;
+        renderSearchResults();
+      });
       el("search-close").addEventListener("click", function () {
         el("search-dialog").classList.remove("open");
       });
